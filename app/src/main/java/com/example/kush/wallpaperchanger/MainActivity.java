@@ -2,6 +2,7 @@ package com.example.kush.wallpaperchanger;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -11,6 +12,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.location.Location;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -29,6 +31,7 @@ import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
 import java.io.File;
 import java.io.IOException;
 import java.math.RoundingMode;
+import java.net.URI;
 import java.text.DecimalFormat;
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -40,6 +43,11 @@ public class MainActivity extends Activity {
     public boolean ACTIVE = false;
     public String srPath ="";
     public String ssPath = "";
+    public Bitmap bitmapSR = null;
+    public Bitmap bitmapSS = null;
+    public int rotateSR;
+    public int rotateSS;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -62,7 +70,14 @@ public class MainActivity extends Activity {
                     new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
                     3);
         }
-
+        permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.MANAGE_DOCUMENTS);
+        if(permissionCheck != PackageManager.PERMISSION_GRANTED)
+        {
+            Toast.makeText(this,"We need location permission to calculate time of sunset and sunrise",Toast.LENGTH_LONG);
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.MANAGE_DOCUMENTS},
+                    3);
+        }
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         Button refreshButt = findViewById(R.id.refreshButt);
@@ -90,17 +105,19 @@ public class MainActivity extends Activity {
 
 
         //setting Sunrise and Sunset Pictures
-        Uri uri;
-        ssPath = sharedPref.getString("SSPath","");
-        if(!ssPath.equals("")) {
-            uri = Uri.fromFile(new File(ssPath));
-            setImage(uri,false);
-        }
-        srPath = sharedPref.getString("SRPath","");
-        if(!srPath.equals("")) {
-            uri = Uri.fromFile(new File(srPath));
-            setImage(uri,true);
-        }
+
+            Uri uri;
+            ssPath = sharedPref.getString("SSPath", "");
+            if (!ssPath.equals("")) {
+                uri = Uri.parse(ssPath);
+                setImage(uri, false);
+            }
+            srPath = sharedPref.getString("SRPath", "");
+            if (!srPath.equals("")) {
+                uri = Uri.parse(srPath);
+                  setImage(uri,true);
+            }
+
 
         //Listening for Activate
         Button activButt = findViewById(R.id.activButt);
@@ -118,25 +135,47 @@ public class MainActivity extends Activity {
         chooseSunrise.setOnClickListener(new View.OnClickListener()
         {
             public void onClick(View v) {
-                Intent intent = new Intent();
-                intent.setType("image/*");
-                intent.setAction(Intent.ACTION_GET_CONTENT);
-                startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_SUNRISE);
+               passIntent(true);
             }
         });
         Button chooseSunset = findViewById(R.id.ChooseSSID);
         chooseSunset.setOnClickListener(new View.OnClickListener()
         {
             public void onClick(View v) {
-                Intent intent = new Intent();
-                intent.setType("image/*");
-                intent.setAction(Intent.ACTION_GET_CONTENT);
-                startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_SUNSET);
+                passIntent(false);
             }
         });
 
 
 
+
+    }
+    public void passIntent(boolean sunRise)
+    {
+        int pick = 0;
+        if(sunRise)
+            pick = 1;
+        else
+            pick = 2;
+        Intent intent;
+        if (Build.VERSION.SDK_INT < 19){
+            intent = new Intent();
+            intent.setAction(Intent.ACTION_GET_CONTENT);
+        } else {
+            intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        }
+        intent.setType("image/*");
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivityForResult(intent, pick);
+        //intent = new Intent();
+            //intent.setAction(Intent.ACTION_GET_CONTENT);
+           // intent.setType("*/*");
+            //intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+           // intent.addCategory(Intent.CATEGORY_OPENABLE);
+           // intent.setType("image/*");
+           // startActivityForResult(intent, pick);
 
     }
     @Override
@@ -153,8 +192,7 @@ public class MainActivity extends Activity {
         else
             activVal =2;
         editor.putInt("Activate Value", activVal);
-        editor.putString("SSPath", ssPath);
-        editor.putString("SRPath",srPath);
+
         editor.commit();
 
 
@@ -220,13 +258,22 @@ public class MainActivity extends Activity {
 
     }
 
+    public void rotate(boolean sunRise)
+    {
+        if(sunRise)
+        {
+            //rotate bitmapSR
+        }
+        else
+            //rotate bitmapSS
+    }
     public void setImage(Uri uri, boolean sunRise)
     {
         if(sunRise) {
             try {
-                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+                bitmapSR = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
                 ImageView SRImage =  findViewById(R.id.SRImageID);
-                SRImage.setImageBitmap(bitmap);
+                SRImage.setImageBitmap(bitmapSR);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -234,9 +281,9 @@ public class MainActivity extends Activity {
         else
         {
             try{
-                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(),uri);
+                bitmapSS = MediaStore.Images.Media.getBitmap(getContentResolver(),uri);
                 ImageView SSImage = findViewById(R.id.SSImageID);
-                SSImage.setImageBitmap(bitmap);
+                SSImage.setImageBitmap(bitmapSS);
             }
             catch (IOException e)
             {
@@ -247,28 +294,29 @@ public class MainActivity extends Activity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data)
     {
+        Uri uri = data.getData();
+        int temp = requestCode;
+        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        final int takeFlags = data.getFlags()
+                & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+// Check for the freshest data.
+        ContentResolver resolver = getContentResolver();
+        resolver.takePersistableUriPermission(uri, takeFlags);
         if (requestCode == PICK_SUNRISE) {
-
-            Uri uri = data.getData();
-            srPath = uri.getPath();
-            ssPath = uri.getPath();
+            srPath = uri.toString();
+            editor.putString("SRPath",srPath);
+            editor.commit();
             setImage(uri,true);
-            File file = new File(uri.toString());
-            if(file.exists())
-            {
-                Bitmap myBitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
-                ImageView myImage = findViewById(R.id.SSImageID);
-                myImage.setImageBitmap(myBitmap);
-            }
-             ssPath = file.getAbsolutePath();
-            uri = Uri.fromFile(new File(ssPath));
 
 
 
         }
         if (requestCode == PICK_SUNSET) {
-            Uri uri = data.getData();
-            ssPath = uri.getPath();
+            ssPath = uri.toString();
+            editor.putString("SSPath",ssPath);
+            editor.commit();
             setImage(uri,false);
         }
     }

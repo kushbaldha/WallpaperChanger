@@ -46,21 +46,23 @@
         android:layout_height="45dp"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="88dp"
+        android:layout_marginTop="84dp"
         android:text="Choose Sunrise Picture"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/RotateSR"
+        app:layout_constraintHorizontal_bias="0.745"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/ChooseSSID"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="220dp"
+        android:layout_height="41dp"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="120dp"
         android:text="Choose Sunset Picture"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.256"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ChooseSRID" />
 
@@ -86,7 +88,7 @@
 
     <ImageView
         android:id="@+id/SRImageID"
-        android:layout_width="235dp"
+        android:layout_width="287dp"
         android:layout_height="109dp"
         android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
@@ -100,7 +102,7 @@
 
     <ImageView
         android:id="@+id/SSImageID"
-        android:layout_width="215dp"
+        android:layout_width="263dp"
         android:layout_height="130dp"
         android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
@@ -135,5 +137,24 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/RotateSR"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="84dp"
+        android:text="Rotate"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/RotateSS"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="24dp"
+        android:text="Rotate"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView7" />
 
 </android.support.constraint.ConstraintLayout>
