@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
@@ -45,8 +46,10 @@ public class MainActivity extends Activity {
     public String ssPath = "";
     public Bitmap bitmapSR = null;
     public Bitmap bitmapSS = null;
-    public int rotateSR;
-    public int rotateSS;
+    public int rotateSR = 0;
+    public int rotateSS = 0;
+    public Matrix matrix = new Matrix();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,6 +121,17 @@ public class MainActivity extends Activity {
                   setImage(uri,true);
             }
 
+        //rotating images 
+        for(int i = 0; i < rotateSR;i++)
+        {
+            bitmapSR = rotate(bitmapSR,true);
+        }
+        for(int i = 0; i < rotateSS;i++)
+        {
+            bitmapSS = rotate(bitmapSS,false);
+        }
+        setImage(bitmapSR,true);
+        setImage(bitmapSS,false);
 
         //Listening for Activate
         Button activButt = findViewById(R.id.activButt);
@@ -126,6 +140,27 @@ public class MainActivity extends Activity {
             public void onClick(View view) {
                 ACTIVE = !ACTIVE;
                 setActiveText();
+            }
+        });
+        Button rotateSRButt = findViewById(R.id.RotateSR);
+        rotateSRButt.setOnClickListener(new View.OnClickListener()  {
+            @Override
+            public void onClick(View view)
+            {
+                rotateSR = (rotateSR+1)%3;
+                if(bitmapSR!=null)
+                    setImage(rotate(bitmapSR,true),true);
+            }
+        });
+        Button rotateSSButt = findViewById(R.id.RotateSS);
+        rotateSSButt.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+                rotateSS = (rotateSS+1)%3;
+                if(bitmapSS!=null)
+                    setImage(rotate(bitmapSS,false),false);
             }
         });
 
@@ -148,6 +183,12 @@ public class MainActivity extends Activity {
 
 
 
+
+    }
+    @Override
+    public void onStart()
+    {
+        super.onStart();
 
     }
     public void passIntent(boolean sunRise)
@@ -258,14 +299,12 @@ public class MainActivity extends Activity {
 
     }
 
-    public void rotate(boolean sunRise)
+    public Bitmap rotate(Bitmap source, boolean sunRise)
     {
-        if(sunRise)
-        {
-            //rotate bitmapSR
-        }
-        else
+
             //rotate bitmapSS
+            matrix.postRotate(90);
+        return Bitmap.createBitmap(source,0,0,source.getWidth(),source.getHeight(),matrix,true);
     }
     public void setImage(Uri uri, boolean sunRise)
     {
@@ -289,6 +328,18 @@ public class MainActivity extends Activity {
             {
                 e.printStackTrace();
             }
+        }
+    }
+    public void setImage(Bitmap source, boolean sunRise)
+    {
+        if(sunRise) {
+            ImageView SRImage =  findViewById(R.id.SRImageID);
+            SRImage.setImageBitmap(source);
+        }
+        else
+        {
+            ImageView SSImage =  findViewById(R.id.SSImageID);
+            SSImage.setImageBitmap(source);
         }
     }
     @Override
