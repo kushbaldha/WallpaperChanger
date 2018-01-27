@@ -2,6 +2,8 @@ package com.example.kush.wallpaperchanger;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.WallpaperManager;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,6 +13,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Point;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
@@ -18,6 +21,7 @@ import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.os.Bundle;
+import android.view.Display;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -44,18 +48,26 @@ public class MainActivity extends Activity {
     public boolean ACTIVE = false;
     public String srPath ="";
     public String ssPath = "";
-    public Bitmap bitmapSR = null;
-    public Bitmap bitmapSS = null;
+    public static Bitmap bitmapSR = null;
+    public static Bitmap bitmapSS = null;
     public int rotateSR = 0;
     public int rotateSS = 0;
     public Matrix matrix = new Matrix();
-
+    public int width = 0;
+    public int height = 0;
+    public Calendar calrise;
+    public Calendar calset;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        width = size.x;
+        height = size.y;
 
         int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
         if(permissionCheck!= PackageManager.PERMISSION_GRANTED)
@@ -104,7 +116,7 @@ public class MainActivity extends Activity {
         {
             ACTIVE = false;
         }
-        setActiveText();
+        setActive();
 
 
         //setting Sunrise and Sunset Pictures
@@ -121,7 +133,7 @@ public class MainActivity extends Activity {
                   setImage(uri,true);
             }
 
-        //rotating images 
+        //rotating images
         for(int i = 0; i < rotateSR;i++)
         {
             bitmapSR = rotate(bitmapSR,true);
@@ -139,7 +151,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View view) {
                 ACTIVE = !ACTIVE;
-                setActiveText();
+                setActive();
             }
         });
         Button rotateSRButt = findViewById(R.id.RotateSR);
@@ -239,12 +251,20 @@ public class MainActivity extends Activity {
 
     }
 
-    public void setActiveText()
+    public void setActive()
     {
         TextView text =  findViewById(R.id.activInfo);
         if(ACTIVE) {
             text.setText("ACTIVATED");
             text.setTextColor(Color.GREEN);
+
+            WallpaperManager manager = WallpaperManager.getInstance(getApplicationContext());
+            if(bitmapSR!=null)
+            {
+               Alarm alarm = new Alarm();
+               alarm.setAlarm(getApplicationContext(),calrise);
+               alarm.setAlarm(getApplicationContext(),calset);
+            }
         }
         else{
             text.setText("NOT ACTIVATED");
@@ -273,6 +293,8 @@ public class MainActivity extends Activity {
                                 System.out.println(TimeZone.getDefault().toString());
                                 String officialSunrise = calculator.getOfficialSunriseForDate(Calendar.getInstance());
                                 String officialSunset = calculator.getOfficialSunsetForDate(Calendar.getInstance());
+                                 calrise = calculator.getOfficialSunriseCalendarForDate(temp);
+                                 calset = calculator.getOfficialSunsetCalendarForDate(temp);
                                 TextView sun = findViewById(R.id.SunriseID);
                                 sun.setText("Sunrise: " + officialSunrise);
                                 sun = findViewById(R.id.SunsetID);
@@ -311,6 +333,7 @@ public class MainActivity extends Activity {
         if(sunRise) {
             try {
                 bitmapSR = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+                bitmapSR = Bitmap.createScaledBitmap(bitmapSR,width,height,false);
                 ImageView SRImage =  findViewById(R.id.SRImageID);
                 SRImage.setImageBitmap(bitmapSR);
             } catch (IOException e) {
@@ -333,11 +356,13 @@ public class MainActivity extends Activity {
     public void setImage(Bitmap source, boolean sunRise)
     {
         if(sunRise) {
+            bitmapSR = source;
             ImageView SRImage =  findViewById(R.id.SRImageID);
             SRImage.setImageBitmap(source);
         }
         else
         {
+            bitmapSS = source;
             ImageView SSImage =  findViewById(R.id.SSImageID);
             SSImage.setImageBitmap(source);
         }
