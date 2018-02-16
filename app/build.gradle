@@ -29,4 +29,5 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
     implementation 'com.google.android.gms:play-services:11.8.0'
     compile 'com.luckycatlabs:SunriseSunsetCalculator:1.2'
+    compile 'com.github.dmytrodanylyk:android-morphing-button:98a4986e56'
 }

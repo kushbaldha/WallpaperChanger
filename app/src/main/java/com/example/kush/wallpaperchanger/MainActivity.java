@@ -3,9 +3,11 @@ package com.example.kush.wallpaperchanger;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlarmManager;
+import android.app.AlertDialog;
 import android.app.WallpaperManager;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -18,6 +20,7 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.os.Bundle;
@@ -57,7 +60,9 @@ public class MainActivity extends Activity {
     public int height = 0;
     public Calendar calrise;
     public Calendar calset;
-
+    public static double longitude;
+    public static double latitude;
+    public SharedPreferences sharedPref;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -95,28 +100,13 @@ public class MainActivity extends Activity {
         }
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        Button refreshButt = findViewById(R.id.refreshButt);
-        refreshButt.setOnClickListener(new View.OnClickListener()
-        {
-            public void onClick(View v)
-            {
-                findLocation();
-            }
-        });
 
 
-        //Getting previous activate value
-        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
-        int activVal = sharedPref.getInt("Activate Value", 0);
-        if(activVal == 1)
-        {
-            ACTIVE = true;
-        }
-        else if(activVal == 2)
-        {
-            ACTIVE = false;
-        }
-        setActive();
+         sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putInt("width",width);
+        editor.putInt("height",height);
+
 
 
         //setting Sunrise and Sunset Pictures
@@ -144,6 +134,20 @@ public class MainActivity extends Activity {
         }
         setImage(bitmapSR,true);
         setImage(bitmapSS,false);
+
+
+        //Getting previous activate value
+        int activVal = sharedPref.getInt("Activate Value", 0);
+        if(activVal == 1)
+        {
+            ACTIVE = true;
+        }
+        else if(activVal == 2)
+        {
+            ACTIVE = false;
+        }
+        setActive();
+
 
         //Listening for Activate
         Button activButt = findViewById(R.id.activButt);
@@ -192,16 +196,6 @@ public class MainActivity extends Activity {
                 passIntent(false);
             }
         });
-
-
-
-
-    }
-    @Override
-    public void onStart()
-    {
-        super.onStart();
-
     }
     public void passIntent(boolean sunRise)
     {
@@ -254,21 +248,20 @@ public class MainActivity extends Activity {
     public void setActive()
     {
         TextView text =  findViewById(R.id.activInfo);
+        Context context  = getApplicationContext();
+        Alarm alarm = new Alarm();
         if(ACTIVE) {
             text.setText("ACTIVATED");
             text.setTextColor(Color.GREEN);
-
-            WallpaperManager manager = WallpaperManager.getInstance(getApplicationContext());
-            if(bitmapSR!=null)
-            {
-               Alarm alarm = new Alarm();
-               alarm.setAlarm(getApplicationContext(),calrise);
-               alarm.setAlarm(getApplicationContext(),calset);
-            }
+            findLocation();
+            if(bitmapSR!=null && bitmapSS!=null)
+               alarm.setRefreshAlarm(context);
         }
         else{
             text.setText("NOT ACTIVATED");
             text.setTextColor(Color.RED);
+            alarm.cancelAlarm(context,1);
+            alarm.cancelAlarm(context,0);
         }
     }
     public void findLocation() {
@@ -280,25 +273,42 @@ public class MainActivity extends Activity {
                         public void onSuccess(Location location) {
                             // Got last known location. In some rare situations this can be null.
                             if (location != null) {
-                                //TextView LatitudeText = (TextView) findViewById(R.id.LatitudeID);
-                                //TextView LongitudeText = (TextView) findViewById(R.id.LongitudeID);
                                 DecimalFormat df = new DecimalFormat("#.####");
                                 df.setRoundingMode(RoundingMode.DOWN);
-                               // LatitudeText.setText("Latitude : " + df.format(location.getLatitude()));
-                               // LongitudeText.setText("Longitude : " + df.format(location.getLongitude()));
+                                //Storing Activate Value
+                                SharedPreferences.Editor editor = sharedPref.edit();
+
+                                latitude = location.getLatitude();
+                                longitude = location.getLongitude();
+                                editor.putFloat("latitude",(float)latitude);
+                                editor.putFloat("longitude",(float)longitude);
                                 com.luckycatlabs.sunrisesunset.dto.Location locationObj = new com.luckycatlabs.sunrisesunset.dto.Location("" + location.getLatitude(), "" + location.getLongitude());
                                 Calendar temp = Calendar.getInstance();
-// Pass the time zone display here in the second parameter.
+                                // Pass the time zone display here in the second parameter.
                                 SunriseSunsetCalculator calculator = new SunriseSunsetCalculator(locationObj, TimeZone.getDefault());
-                                System.out.println(TimeZone.getDefault().toString());
-                                String officialSunrise = calculator.getOfficialSunriseForDate(Calendar.getInstance());
-                                String officialSunset = calculator.getOfficialSunsetForDate(Calendar.getInstance());
                                  calrise = calculator.getOfficialSunriseCalendarForDate(temp);
                                  calset = calculator.getOfficialSunsetCalendarForDate(temp);
                                 TextView sun = findViewById(R.id.SunriseID);
-                                sun.setText("Sunrise: " + officialSunrise);
+                                sun.setText("Sunrise: " + calrise.getTime().toString());
                                 sun = findViewById(R.id.SunsetID);
-                                sun.setText("Sunset:" + officialSunset);
+                                sun.setText("Sunset:" + calset.getTime().toString());
+                            }
+                            else {
+                                new AlertDialog.Builder(MainActivity.this)
+                                        .setTitle("Please activate location")
+                                        .setMessage("Click ok to goto settings else exit.")
+                                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                                                startActivity(intent);
+                                            }
+                                        })
+                                        .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                System.exit(0);
+                                            }
+                                        })
+                                        .show();
                             }
                         }
                     });
@@ -311,14 +321,6 @@ public class MainActivity extends Activity {
                     new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
                     3);
         }
-
-
-            //Calendar calendar = Calendar.getInstance();
-            //TimeZone timezoneObj =  calendar.getTimeZone();
-           // timezoneObj.getID();
-
-
-
     }
 
     public Bitmap rotate(Bitmap source, boolean sunRise)
