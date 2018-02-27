@@ -102,11 +102,11 @@ public class MainActivity extends Activity {
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
 
-         sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+         sharedPref = this.getSharedPreferences("my prefs",Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putInt("width",width);
         editor.putInt("height",height);
-
+        editor.commit();
 
 
         //setting Sunrise and Sunset Pictures
@@ -231,7 +231,7 @@ public class MainActivity extends Activity {
         super.onPause();
 
         //Storing Activate Value
-        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences sharedPref = this.getSharedPreferences("my prefs",Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         int activVal = 0;
         if(ACTIVE)
@@ -278,10 +278,11 @@ public class MainActivity extends Activity {
                                 //Storing Activate Value
                                 SharedPreferences.Editor editor = sharedPref.edit();
 
-                                latitude = location.getLatitude();
-                                longitude = location.getLongitude();
-                                editor.putFloat("latitude",(float)latitude);
-                                editor.putFloat("longitude",(float)longitude);
+                                float latitude = (float) location.getLatitude();
+                                float longitude = (float) location.getLongitude();
+                                editor.putFloat("latitude",latitude);
+                                editor.putFloat("longitude",longitude);
+                                editor.commit();
                                 com.luckycatlabs.sunrisesunset.dto.Location locationObj = new com.luckycatlabs.sunrisesunset.dto.Location("" + location.getLatitude(), "" + location.getLongitude());
                                 Calendar temp = Calendar.getInstance();
                                 // Pass the time zone display here in the second parameter.
@@ -374,7 +375,7 @@ public class MainActivity extends Activity {
     {
         Uri uri = data.getData();
         int temp = requestCode;
-        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences sharedPref = this.getSharedPreferences("my prefs",Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         final int takeFlags = data.getFlags()
                 & (Intent.FLAG_GRANT_READ_URI_PERMISSION

@@ -10,11 +10,17 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.Calendar;
 import java.util.TimeZone;
 
@@ -23,30 +29,30 @@ import java.util.TimeZone;
  */
 
 public class Alarm extends BroadcastReceiver {
-    private boolean sunRise = false;
     @Override
     public void onReceive(Context context, Intent intent)
     {
         SharedPreferences sharedPref = context.getSharedPreferences("my prefs",Context.MODE_PRIVATE);
-        int type = intent.getIntExtra("type",-1);
+        int type =  intent.getIntExtra("type",-1);
         if(type == 0)
         {
-            Calendar temp = Calendar.getInstance();
-
+            Calendar cur = Calendar.getInstance();
             double longitude = sharedPref.getFloat("longitude",0);
             double latitude = sharedPref.getFloat("latitude",0);
             com.luckycatlabs.sunrisesunset.dto.Location locationObj = new com.luckycatlabs.sunrisesunset.dto.Location("" + latitude, "" + longitude);
             SunriseSunsetCalculator calculator = new SunriseSunsetCalculator(locationObj,TimeZone.getDefault());
-            Calendar calrise = calculator.getOfficialSunriseCalendarForDate(temp);
-            Calendar calset = calculator.getOfficialSunsetCalendarForDate(temp);
-            Alarm alarm = new Alarm();
-            alarm.setAlarm(context,calrise,true);
-            alarm.setAlarm(context, calset,false);
+            Calendar calrise = calculator.getOfficialSunriseCalendarForDate(cur);
+            Calendar calset = calculator.getOfficialSunsetCalendarForDate(cur);
+            Toast.makeText(context,"Setting Alarms", Toast.LENGTH_LONG).show();
+            setAlarm(context,calrise,true);
+            setAlarm(context, calset,false);
+
         }
         else if(type >= 1)
         {
             Uri uri = null;
             Bitmap bitmap = null;
+             Toast.makeText(context,"Setting Wallpaper", Toast.LENGTH_LONG).show();
 
             if(type == 1)
             {
@@ -87,7 +93,6 @@ public class Alarm extends BroadcastReceiver {
     }
     public boolean setAlarm(Context context, Calendar calendar,boolean sunRiseIn)
     {
-        sunRise = sunRiseIn;
         Calendar calnow = Calendar.getInstance();
         if(calendar==null)
         {
@@ -119,13 +124,17 @@ public class Alarm extends BroadcastReceiver {
 
         AlarmManager alrmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent i = new Intent(context,Alarm.class);
-        if(sunRise)
-        i.putExtra("type",1);
-        else
-        i.putExtra("type",2);
-        PendingIntent pi = PendingIntent.getBroadcast(context,0,i,0);
+        PendingIntent pi = null;
+        if(sunRiseIn) {
+            i.putExtra("type", 1);
+            pi = PendingIntent.getBroadcast(context,1,i,0);
+        }
+        else {
+            i.putExtra("type", 2);
+            pi = PendingIntent.getBroadcast(context,2,i,0);
+        }
+
         alrmManager.set(AlarmManager.RTC, calendar.getTimeInMillis(),pi);
-        Toast.makeText(context,"Set alarm", Toast.LENGTH_LONG).show();
         return true;
 
     }
@@ -135,16 +144,15 @@ public class Alarm extends BroadcastReceiver {
     public void setRefreshAlarm(Context context)
     {
         Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY,24);
-
-
+        //calendar.set(Calendar.HOUR_OF_DAY,24);
         //sets repeating alarm for everyday at midnight
         AlarmManager alrmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent i = new Intent(context,Alarm.class);
         i.putExtra("type",0);
         PendingIntent pi = PendingIntent.getBroadcast(context,0,i,0);
-        alrmManager.setRepeating(AlarmManager.RTC,calendar.getTimeInMillis(), 24*60*60*1000 ,pi);
-        Toast.makeText(context,"Set alarm", Toast.LENGTH_LONG).show();
+        //
+        alrmManager.setRepeating(AlarmManager.RTC,calendar.getTimeInMillis(),24*60*60*1000 ,pi);
+        Toast.makeText(context,"Set alarm!", Toast.LENGTH_LONG).show();
     }
     public void cancelAlarm(Context context, int requestCode)
     {
